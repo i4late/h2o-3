@@ -11,7 +11,7 @@ import water.fvec.Frame;
 import water.rapids.vals.ValFrame;
 
 public class GroupByTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testBasic() {
     Frame fr = null;
@@ -211,6 +211,19 @@ public class GroupByTest extends TestUtil {
     v_groupby.getFrame().delete();
 
     cov.delete();
+  }
+
+  @Test public void testGroupbyMedian() {
+    Frame fr = null;
+    String tree = "(GB hex [0] median 1 \"all\")"; // Group-By on col 0 median of col 1
+    double[] correct_median = {0.492902151891, 0.495257127399, 0.507764497268, 0.496941601363, 0.497138679356};
+    try {
+      fr = chkTree(tree, "smalldata/jira/pubdev_4727_median.csv");
+      System.out.println("Wow");
+    } finally {
+      if( fr != null ) fr.delete();
+      Keyed.remove(Key.make("hex"));
+    }
   }
 
   @Test public void testGroupbyTableSpeed() {

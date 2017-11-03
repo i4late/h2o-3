@@ -1,25 +1,23 @@
 package water.rapids.ast.prims.mungers;
 
-import water.H2O;
-import water.Iced;
-import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.*;
+import water.fvec.*;
 import water.rapids.Env;
+import water.rapids.Merge;
+import water.rapids.Rapids;
 import water.rapids.Val;
-import water.rapids.ast.AstRoot;
-import water.rapids.vals.ValFrame;
-import water.rapids.vals.ValFun;
 import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
+import water.rapids.vals.ValFrame;
+import water.rapids.vals.ValFun;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * GroupBy
@@ -40,82 +38,82 @@ public class AstGroup extends AstPrimitive {
   public enum FCN {
     nrow() {
       @Override
-      public void op(double[] d0s, double d1) {
+      public void op(double[] d0s, double d1, NewChunk myChunk) {
         d0s[0]++;
       }
 
       @Override
-      public void atomic_op(double[] d0s, double[] d1s) {
+      public void atomic_op(double[] d0s, double[] d1s, Frame my0Frame, Frame my1Frame) {
         d0s[0] += d1s[0];
       }
 
       @Override
-      public double postPass(double ds[], long n) {
+      public double postPass(double ds[], long n, Frame myFrame) {
         return ds[0];
       }
     },
     mean() {
       @Override
-      public void op(double[] d0s, double d1) {
+      public void op(double[] d0s, double d1, NewChunk myChunk) {
         d0s[0] += d1;
       }
 
       @Override
-      public void atomic_op(double[] d0s, double[] d1s) {
+      public void atomic_op(double[] d0s, double[] d1s, Frame my0Frame, Frame my1Frame) {
         d0s[0] += d1s[0];
       }
 
       @Override
-      public double postPass(double ds[], long n) {
+      public double postPass(double ds[], long n, Frame myFrame) {
         return ds[0] / n;
       }
     },
     sum() {
       @Override
-      public void op(double[] d0s, double d1) {
+      public void op(double[] d0s, double d1, NewChunk myChunk) {
         d0s[0] += d1;
       }
 
       @Override
-      public void atomic_op(double[] d0s, double[] d1s) {
+      public void atomic_op(double[] d0s, double[] d1s, Frame my0Frame, Frame my1Frame) {
         d0s[0] += d1s[0];
       }
 
       @Override
-      public double postPass(double ds[], long n) {
+      public double postPass(double ds[], long n, Frame myFrame) {
         return ds[0];
       }
     },
     sumSquares() {
       @Override
-      public void op(double[] d0s, double d1) {
+      public void op(double[] d0s, double d1, NewChunk myChunk) {
         d0s[0] += d1 * d1;
       }
 
       @Override
-      public void atomic_op(double[] d0s, double[] d1s) {
+      public void atomic_op(double[] d0s, double[] d1s, Frame my0Frame, Frame my1Frame) {
         d0s[0] += d1s[0];
       }
 
       @Override
-      public double postPass(double ds[], long n) {
+      public double postPass(double ds[], long n, Frame myFrame) {
         return ds[0];
       }
     },
     var() {
       @Override
-      public void op(double[] d0s, double d1) {
+      public void op(double[] d0s, double d1, NewChunk myChunk) {
         d0s[0] += d1 * d1;
         d0s[1] += d1;
       }
 
       @Override
-      public void atomic_op(double[] d0s, double[] d1s) {
+      public void atomic_op(double[] d0s, double[] d1s, Frame my0Frame, Frame my1Frame) {
         ArrayUtils.add(d0s, d1s);
       }
 
       @Override
-      public double postPass(double ds[], long n) {
+      public double postPass(double ds[], long n, Frame myFrame) {
         double numerator = ds[0] - ds[1] * ds[1] / n;
         if (Math.abs(numerator) < 1e-5) numerator = 0;
         return numerator / (n - 1);
@@ -128,18 +126,18 @@ public class AstGroup extends AstPrimitive {
     },
     sdev() {
       @Override
-      public void op(double[] d0s, double d1) {
+      public void op(double[] d0s, double d1, NewChunk myChunk) {
         d0s[0] += d1 * d1;
         d0s[1] += d1;
       }
 
       @Override
-      public void atomic_op(double[] d0s, double[] d1s) {
+      public void atomic_op(double[] d0s, double[] d1s, Frame my0Frame, Frame my1Frame) {
         ArrayUtils.add(d0s, d1s);
       }
 
       @Override
-      public double postPass(double ds[], long n) {
+      public double postPass(double ds[], long n, Frame myFrame) {
         double numerator = ds[0] - ds[1] * ds[1] / n;
         if (Math.abs(numerator) < 1e-5) numerator = 0;
         return Math.sqrt(numerator / (n - 1));
@@ -152,17 +150,17 @@ public class AstGroup extends AstPrimitive {
     },
     min() {
       @Override
-      public void op(double[] d0s, double d1) {
+      public void op(double[] d0s, double d1, NewChunk myChunk) {
         d0s[0] = Math.min(d0s[0], d1);
       }
 
       @Override
-      public void atomic_op(double[] d0s, double[] d1s) {
-        op(d0s, d1s[0]);
+      public void atomic_op(double[] d0s, double[] d1s, Frame my0Frame, Frame my1Frame) {
+        op(d0s, d1s[0], null);
       }
 
       @Override
-      public double postPass(double ds[], long n) {
+      public double postPass(double ds[], long n, Frame myFrame) {
         return ds[0];
       }
 
@@ -173,17 +171,17 @@ public class AstGroup extends AstPrimitive {
     },
     max() {
       @Override
-      public void op(double[] d0s, double d1) {
+      public void op(double[] d0s, double d1, NewChunk myChunk) {
         d0s[0] = Math.max(d0s[0], d1);
       }
 
       @Override
-      public void atomic_op(double[] d0s, double[] d1s) {
-        op(d0s, d1s[0]);
+      public void atomic_op(double[] d0s, double[] d1s, Frame my0Frame, Frame my1Frame) {
+        op(d0s, d1s[0], null);
       }
 
       @Override
-      public double postPass(double ds[], long n) {
+      public double postPass(double ds[], long n, Frame myFrame) {
         return ds[0];
       }
 
@@ -192,19 +190,64 @@ public class AstGroup extends AstPrimitive {
         return new double[]{-Double.MAX_VALUE};
       }
     },
+    median() {
+      @Override
+      public void op(double[] d0s, double d1, NewChunk myChunk) {
+        myChunk.addNum(d1);
+      }
+
+      @Override
+      public void atomic_op(double[] d0s, double[] d1s, Frame my0Frame, Frame my1Frame) {
+        // basically rbind the two frames into one.  Need to make sure only one thread is executing this at one time
+          Key<Frame> frame0Key = my0Frame._key;
+          String tree = "(rbind "+frame0Key.toString()+" "+ my1Frame._key.toString()+")";
+          DKV.put(my0Frame);
+          DKV.put(my1Frame);
+          Val val = Rapids.exec(tree);
+          my0Frame.remove(0);
+          my0Frame.add(val.getFrame());
+        //  my0Frame._key = frame0Key;
+    //      my1Frame = my0Frame;  // make sure both frame contain the merged data here
+        //  DKV.remove(my0Frame._key);
+        //  DKV.remove(my1Frame._key);
+      }
+
+      // Median is the middle element of a sorted column or the mean of the two middle elements for even row number.
+      // Our sort will put all NA rows at the front of the column.
+      @Override
+      public double postPass(double ds[], long n, Frame myFrame) {
+        long totalRows = myFrame.numRows();
+        if (totalRows == 0)
+          return Double.NaN;  // return NAN for empty frames.  Should not have happened!
+
+        long midRow = totalRows/2;
+        Frame tempFrame = Merge.sort(myFrame, new int[]{0});
+
+        if (Double.isNaN(tempFrame.vec(0).at(midRow)))  // return NaN if middle value is NaN
+          return Double.NaN;
+
+        return totalRows%2==0?0.5*(tempFrame.vec(0).at(midRow-1)+ tempFrame.vec(0).at(midRow)):
+                tempFrame.vec(0).at(midRow); // mean of two middle ones for even row number.
+      }
+
+      @Override
+      public double[] initVal(int maxx) {
+        return new double[maxx];
+      }
+    },
     mode() {
       @Override
-      public void op(double[] d0s, double d1) {
+      public void op(double[] d0s, double d1, NewChunk myChunk) {
         d0s[(int) d1]++;
       }
 
       @Override
-      public void atomic_op(double[] d0s, double[] d1s) {
+      public void atomic_op(double[] d0s, double[] d1s, Frame my0Frame, Frame my1Frame) {
         ArrayUtils.add(d0s, d1s);
       }
 
       @Override
-      public double postPass(double ds[], long n) {
+      public double postPass(double ds[], long n, Frame myFrame) {
         return ArrayUtils.maxIndex(ds);
       }
 
@@ -214,11 +257,11 @@ public class AstGroup extends AstPrimitive {
       }
     },;
 
-    public abstract void op(double[] d0, double d1);
+    public abstract void op(double[] d0, double d1, NewChunk myChunk); // only needed for median
 
-    public abstract void atomic_op(double[] d0, double[] d1);
+    public abstract void atomic_op(double[] d0, double[] d1, Frame my0Frame, Frame my1Frame);
 
-    public abstract double postPass(double ds[], long n);
+    public abstract double postPass(double ds[], long n, Frame myFrame);
 
     public double[] initVal(int maxx) {
       return new double[]{0};
@@ -312,7 +355,7 @@ public class AstGroup extends AstPrimitive {
           for (j = 0; j < g._gs.length; j++) // The Group Key, as a row
             ncs[j].addNum(g._gs[j]);
           for (int a = 0; a < aggs.length; a++)
-            ncs[j++].addNum(aggs[a]._fcn.postPass(g._dss[a], g._ns[a]));
+            ncs[j++].addNum(aggs[a]._fcn.postPass(g._dss[a], g._ns[a], g._groupFrames[a]));
         }
       }
     };
@@ -391,18 +434,18 @@ public class AstGroup extends AstPrimitive {
     // Update the array pair {ds[i],ns[i]} with d1.
     // ds is the reduction array
     // ns is the element count
-    public void op(double[][] d0ss, long[] n0s, int i, double d1) {
+    public void op(double[][] d0ss, long[] n0s, int i, double d1, NewChunk[] myChunk) {
       // Normal number or ALL   : call op()
-      if (!Double.isNaN(d1) || _na == NAHandling.ALL) _fcn.op(d0ss[i], d1);
+      if (!Double.isNaN(d1) || _na == NAHandling.ALL) _fcn.op(d0ss[i], d1, myChunk[i]);
       // Normal number or IGNORE: bump count; RM: do not bump count
       if (!Double.isNaN(d1) || _na == NAHandling.IGNORE) n0s[i]++;
     }
 
     // Atomically update the array pair {dss[i],ns[i]} with the pair {d1,n1}.
     // Same as op() above, but called racily and updates atomically.
-    public void atomic_op(double[][] d0ss, long[] n0s, int i, double[] d1s, long n1) {
+    public void atomic_op(double[][] d0ss, long[] n0s, Frame[] my0Chunk, int i, double[] d1s, long n1, Frame my1Chunk) {
       synchronized (d0ss[i]) {
-        _fcn.atomic_op(d0ss[i], d1s);
+        _fcn.atomic_op(d0ss[i], d1s, my0Chunk[i], my1Chunk);
         n0s[i] += n1;
       }
     }
@@ -420,10 +463,12 @@ public class AstGroup extends AstPrimitive {
     private final int[] _gbCols; // Columns used to define group
     private final AGG[] _aggs;   // Aggregate descriptions
 
+
     GBTask(int[] gbCols, AGG[] aggs) {
       _gbCols = gbCols;
       _aggs = aggs;
       _gss = new IcedHashMap<>();
+
     }
 
     @Override
@@ -432,6 +477,8 @@ public class AstGroup extends AstPrimitive {
       IcedHashMap<G, String> gs = new IcedHashMap<>();
       G gWork = new G(_gbCols.length, _aggs); // Working Group
       G gOld;                   // Existing Group to be filled in
+      Futures future = new Futures();
+
       for (int row = 0; row < cs[0]._len; row++) {
         // Find the Group being worked on
         gWork.fill(row, cs, _gbCols);            // Fill the worker Group for the hashtable lookup
@@ -441,10 +488,27 @@ public class AstGroup extends AstPrimitive {
         } else gOld = gs.getk(gWork);            // Else get existing group
 
         for (int i = 0; i < _aggs.length; i++) // Accumulate aggregate reductions
-          _aggs[i].op(gOld._dss, gOld._ns, i, cs[_aggs[i]._col].atd(row));
+          _aggs[i].op(gOld._dss, gOld._ns, i, cs[_aggs[i]._col].atd(row), gOld._myChunk);
+
       }
+
+      finishChunkProcess(future, gs);  // store all the group chunks info into frames
+
       // This is a racy update into the node-local shared table of groups
       reduce(gs);               // Atomically merge Group stats
+      future.blockForPending();
+    }
+
+    public void finishChunkProcess(Futures fs, IcedHashMap<G, String> gs) {
+      for (Iterator<G> it = gs.keySet().iterator(); it.hasNext(); ) {
+        G oneGroup = it.next(); // loop through all groups
+        int colNumber = _aggs.length;
+        for (int i =0; i < colNumber; i++) { // make a frame out of NewChunks
+          oneGroup._myChunk[i].close(0, fs);
+          Vec[] tempVecs = {oneGroup._av[i].layout_and_close(fs)};
+          oneGroup._groupFrames[i] = new Frame(Key.<Frame>make(), tempVecs, true); // one Frame per column per group
+        }
+      }
     }
 
     // Racy update on a subtle path: reduction is always single-threaded, but
@@ -460,8 +524,8 @@ public class AstGroup extends AstPrimitive {
       for (G rg : r.keySet())
         if (_gss.putIfAbsent(rg, "") != null) {
           G lg = _gss.getk(rg);
-          for (int i = 0; i < _aggs.length; i++)
-            _aggs[i].atomic_op(lg._dss, lg._ns, i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
+          for (int i = 0; i < _aggs.length; i++)  // copy arrays over or chunks over, one column at a time
+            _aggs[i].atomic_op(lg._dss, lg._ns, lg._groupFrames, i, rg._dss[i], rg._ns[i], rg._groupFrames[i]); // Need to atomically merge groups here
         }
     }
   }
@@ -475,13 +539,27 @@ public class AstGroup extends AstPrimitive {
 
     public final double _dss[][];      // Aggregates: usually sum or sum*2
     public final long _ns[];         // row counts per aggregate, varies by NA handling and column
+    public NewChunk[] _myChunk;        // new chunks to store values belonging to this group
+    public AppendableVec[] _av;
+    Key[] _keys;
+    public Frame[] _groupFrames;
 
     public G(int ncols, AGG[] aggs) {
       _gs = new double[ncols];
+
       int len = aggs == null ? 0 : aggs.length;
       _dss = new double[len][];
       _ns = new long[len];
-      for (int i = 0; i < len; i++) _dss[i] = aggs[i].initVal();
+      _myChunk = new NewChunk[ncols];
+      _av = new AppendableVec[ncols];
+      _groupFrames = new Frame[ncols];
+      _keys = Vec.VectorGroup.VG_LEN1.addVecs(ncols);
+
+      for (int i = 0; i < len; i++) {
+        _dss[i] = aggs[i].initVal();
+        _av[i] = new AppendableVec(_keys[i], Vec.T_NUM);
+        _myChunk[i] = new NewChunk(_av[i],0); // remember to close this chunk when done writing.
+      }
     }
 
     public G fill(int row, Chunk chks[], int cols[]) {
