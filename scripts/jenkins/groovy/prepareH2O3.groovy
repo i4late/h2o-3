@@ -26,7 +26,7 @@ def call(final String mode, final String nodeLabel, final boolean overrideDetect
 
   // Load build script and execute it
   def buildH2O3 = load('h2o-3/scripts/jenkins/groovy/buildH2O3.groovy')
-  // buildH2O3(buildConfig)
+  buildH2O3(buildConfig)
   return buildConfig
 }
 
