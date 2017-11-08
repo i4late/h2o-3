@@ -3,7 +3,7 @@ def call(buildConfig, stageConfig) {
   def H2O_3_HOME = 'h2o-3'
 
   if (stageConfig.bucket == null) {
-    stageConfig.bucket = 'test.0xdata.com/h2o-3-benchmarks'
+    stageConfig.bucket = 's3://test.0xdata.com/h2o-3-benchmarks'
   }
   if (stageConfig.datasetsPath == null) {
     stageConfig.datasetsPath = 'h2oR/accuracy_datasets_h2o.csv'
@@ -18,17 +18,15 @@ def call(buildConfig, stageConfig) {
   def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
   def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
 
-  stage (stageConfig.stageName) {
-    def mlBenchmarkRoot = "${stageNameToDirName}/h2o-3/ml-benchmark"
-    dir (mlBenchmarkRoot) {
-      checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea', url: 'https://github.com/h2oai/ml-benchmark']]]
-    }
-    if (stageConfig.benchmarkResultsRoot == null) {
-      stageConfig.benchmarkResultsRoot = "${env.WORKSPACE}/benchmark_results/${stageConfig.stageName}"
-    }
-    withEnv(["OUTPUT_PREFIX=${stageConfig.benchmarkResultsRoot}", "DATASETS_PATH=${mlBenchmarkRoot}/${stageConfig.datasetsPath}", , "TEST_CASES_PATH=${mlBenchmarkRoot}/${stageConfig.testCasesPath}"]) {
-      defaultStage(buildConfig, stageConfig)
-    }
+  def mlBenchmarkRoot = "${env.WORKSPACE}/${stageNameToDirName(stageConfig.stageName)}/h2o-3/ml-benchmark"
+  dir (mlBenchmarkRoot) {
+    checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea', url: 'https://github.com/h2oai/ml-benchmark']]]
+  }
+  if (stageConfig.benchmarkResultsRoot == null) {
+    stageConfig.benchmarkResultsRoot = "${env.WORKSPACE}/benchmark_results/${stageConfig.stageName}"
+  }
+  withEnv(["OUTPUT_PREFIX=${stageConfig.benchmarkResultsRoot}", "DATASETS_PATH=${mlBenchmarkRoot}/${stageConfig.datasetsPath}", , "TEST_CASES_PATH=${mlBenchmarkRoot}/${stageConfig.testCasesPath}"]) {
+    defaultStage(buildConfig, stageConfig)
   }
 }
 

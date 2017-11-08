@@ -33,9 +33,6 @@ def call(buildConfig, stageConfig) {
 
           def stageDir = stageNameToDirName(stageConfig.stageName)
           def h2oFolder = stageDir + '/h2o-3'
-          dir(stageDir) {
-            deleteDir()
-          }
 
           // pull the test package unless this is a LANG_NONE stage
           if (stageConfig.lang != buildConfig.LANG_NONE) {

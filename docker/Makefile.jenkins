@@ -278,9 +278,4 @@ test-junit-smoke:
 	@ DOONLY=$(JUNIT_SMOKE_DOONLY) $(MAKE) -f $(THIS_FILE) test-junit-scala-2.11
 
 benchmark-gbm:
-	echo "BENCHMARK GBM"
-	printenv
-	pwd
-	ls -alh
-	cd ml-benchmark && ls -alh
-	# cd ml-benchmark/h2oR/ && R -f h2o_gbm.R
+	cd ml-benchmark/h2oR/ && R -f h2o_gbm.R
