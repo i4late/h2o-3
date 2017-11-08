@@ -282,5 +282,5 @@ benchmark-gbm:
 	printenv
 	pwd
 	ls -alh
-	cd ml-benchmark
-	ls -alh
+	cd ml-benchmark && ls -alh
+	# cd ml-benchmark/h2oR/ && R -f h2o_gbm.R

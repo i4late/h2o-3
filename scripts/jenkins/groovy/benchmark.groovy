@@ -5,6 +5,12 @@ def call(buildConfig, stageConfig) {
   if (stageConfig.bucket == null) {
     stageConfig.bucket = 'test.0xdata.com/h2o-3-benchmarks'
   }
+  if (stageConfig.datasetsPath == null) {
+    stageConfig.datasetsPath = 'h2oR/accuracy_datasets_h2o.csv'
+  }
+  if (stageConfig.testCasesPath == null) {
+    stageConfig.testCasesPath = 'h2oR/testCasesPath_h2o.csv'
+  }
 
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
   def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
@@ -13,15 +19,14 @@ def call(buildConfig, stageConfig) {
   def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
 
   stage (stageConfig.stageName) {
-
-    dir ("${stageNameToDirName}/h2o-3/ml-benchmark") {
+    def mlBenchmarkRoot = "${stageNameToDirName}/h2o-3/ml-benchmark"
+    dir (mlBenchmarkRoot) {
       checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea', url: 'https://github.com/h2oai/ml-benchmark']]]
     }
-
     if (stageConfig.benchmarkResultsRoot == null) {
       stageConfig.benchmarkResultsRoot = "${env.WORKSPACE}/benchmark_results/${stageConfig.stageName}"
     }
-    withEnv(["OUTPUT_PREFIX=${stageConfig.benchmarkResultsRoot}"]) {
+    withEnv(["OUTPUT_PREFIX=${stageConfig.benchmarkResultsRoot}", "DATASETS_PATH=${mlBenchmarkRoot}/${stageConfig.datasetsPath}", , "TEST_CASES_PATH=${mlBenchmarkRoot}/${stageConfig.testCasesPath}"]) {
       defaultStage(buildConfig, stageConfig)
     }
   }

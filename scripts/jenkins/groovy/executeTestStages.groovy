@@ -30,9 +30,9 @@ def call(buildConfig) {
     //   timeoutValue: 20, lang: buildConfig.LANG_JAVA
     // ],
     [
-      stageName: 'GBM Benchmark', timeoutValue: 120, 
+      stageName: 'GBM Benchmark', timeoutValue: 120,
       executionScript: 'h2o-3/scripts/jenkins/groovy/benchmark.groovy', target: 'benchmark-gbm',
-      lang: buildConfig.LANG_NONE, additionalTestPackages: [buildConfig.LANG_PY]
+      lang: buildConfig.LANG_NONE, additionalTestPackages: [buildConfig.LANG_R]
     ]
   ]
 
