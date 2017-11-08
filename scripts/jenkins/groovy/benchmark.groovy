@@ -1,7 +1,15 @@
 def call(buildConfig, stageConfig) {
-  echo "BENCHMARKING SCRIPT"
-  echo "${buildConfig}"
-  echo "${stageConfig}"
+  stage (stageConfig.stageName) {
+    stage('Preparation') {
+      echo "Checkout ml-benchmark"
+    }
+    stage ('Prepare H2O-3') {
+      echo "Checkout H2O-3"
+    }
+    stage ('Benchmark') {
+      echo "Benchmark"
+    }
+  }
 }
 
 // def BENCHMARK_SUITE_DEFAULT_PATH = 'benchmarking_suite.csv'
