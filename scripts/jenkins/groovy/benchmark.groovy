@@ -6,7 +6,7 @@ def call(buildConfig, stageConfig) {
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
   def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
   def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
-  
+
   stage (stageConfig.stageName) {
     writeFile file: BENCHMARK_SUITE_DEFAULT_PATH, text: """id,commit,num_of_runs,benchmark_file,env_file,bucket
 1,master,1,benchmark.sh,env-file,test.0xdata.com/h2o-3-benchmarks
@@ -50,22 +50,17 @@ echo \${TEST_VAR}
       """
 
       dir (H2O_3_BENCHMARK_HOME) {
-        retry(3) {
-          timeout(time: 1, unit: 'MINUTES') {
-            checkout([$class: 'GitSCM', branches: [[name: spec['commit'] ]],
-              userRemoteConfigs: [[url: 'https://github.com/h2oai/h2o-3']]])
-          }
-        }
+        sh "pwd"
       }
-      def buildEnv = customEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
-      insideDocker(buildEnv, buildConfig, stageConfig.timeoutValue, 'MINUTES') {
-        buildTarget {
-          target = 'build-h2o-3'
-          hasJUnit = false
-          archiveFiles = false
-          h2o3dir = H2O_3_BENCHMARK_HOME
-        }
-      }
+      // def buildEnv = customEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
+      // insideDocker(buildEnv, buildConfig, stageConfig.timeoutValue, 'MINUTES') {
+      //   buildTarget {
+      //     target = 'build-h2o-3'
+      //     hasJUnit = false
+      //     archiveFiles = false
+      //     h2o3dir = H2O_3_BENCHMARK_HOME
+      //   }
+      // }
 
       // def range = (1..Integer.parseInt(spec['numOfRuns'])).toArray()
       // for (runNum in range) {
