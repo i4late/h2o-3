@@ -37,6 +37,11 @@ echo \${TEST_VAR}
     }
     def benchmarkConfig = readConfig(configPath)
 
+    dir (H2O_3_BENCHMARK_HOME) {
+      deleteDir()
+      sh "git clone ${env.WORKSPACE}/h2o-3 ."
+    }
+
     benchmarkConfig.each{ id, spec ->
       def revisionResultsRoot = resultsRoot + "/${spec['commit']}_${id}"
       echo "###### Starting benchmarks for ${spec['commit']} ######"
@@ -50,23 +55,22 @@ echo \${TEST_VAR}
       """
 
       dir (H2O_3_BENCHMARK_HOME) {
-        deleteDir()
-        sh 'git clone ../h2o-3 .'
+        sh "git checkout -f ${spec['commit']}"
       }
-      // def buildEnv = customEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
-      // insideDocker(buildEnv, buildConfig, stageConfig.timeoutValue, 'MINUTES') {
-      //   buildTarget {
-      //     target = 'build-h2o-3'
-      //     hasJUnit = false
-      //     archiveFiles = false
-      //     h2o3dir = H2O_3_BENCHMARK_HOME
-      //   }
-      // }
+      def buildEnv = customEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
+      insideDocker(buildEnv, buildConfig, stageConfig.timeoutValue, 'MINUTES') {
+        buildTarget {
+          target = 'build-h2o-3'
+          hasJUnit = false
+          archiveFiles = false
+          h2o3dir = H2O_3_BENCHMARK_HOME
+        }
+      }
 
-      // def range = (1..Integer.parseInt(spec['numOfRuns'])).toArray()
-      // for (runNum in range) {
-      //   try {
-      //     echo "###### Starting benchmark #${runNum} for ${spec['commit']} ######"
+      def range = (1..Integer.parseInt(spec['numOfRuns'])).toArray()
+      for (runNum in range) {
+        try {
+          echo "###### Starting benchmark #${runNum} for ${spec['commit']} ######"
       //     def timestamp = new Date().getTime()
       //     if (!ensureFileExists(spec['benchmarkFile']) || !ensureFileExists(spec['envFile'])) {
       //         continue
@@ -87,10 +91,10 @@ echo \${TEST_VAR}
       //         }
       //       }
       //     // }
-      //   } finally {
-      //     echo "###### Benchmark #${runNum} for ${spec['commit']} finished ######"
-      //   }
-      // }
+        } finally {
+          echo "###### Benchmark #${runNum} for ${spec['commit']} finished ######"
+        }
+      }
     }
   }
 }
