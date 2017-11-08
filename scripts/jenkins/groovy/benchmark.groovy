@@ -8,18 +8,23 @@ def call(buildConfig, stageConfig) {
   def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
 
   stage (stageConfig.stageName) {
+
+    def currentRevision = null
+
+    dir (H2O_3_BENCHMARK_HOME) {
+      deleteDir()
+      sh "git clone ${env.WORKSPACE}/h2o-3 ."
+      sh 'git branch'
+      currentRevision = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+    }
+
     writeFile file: BENCHMARK_SUITE_DEFAULT_PATH, text: """id,commit,num_of_runs,benchmark_file,env_file,bucket
-1,master,1,benchmark.sh,env-file,test.0xdata.com/h2o-3-benchmarks
-2,rel-weierstrass,3,benchmark.sh,env-file,test.0xdata.com/h2o-3-benchmarks
+1,${currentRevision},1,benchmark.sh,env-file,test.0xdata.com/h2o-3-benchmarks
 """
-    writeFile file: 'env-file', text: """DUMMY_VAR='BENCH VAR'
-TEST_VAR='TEST VAR'
-"""
+    writeFile file: 'env-file', text: ''
     writeFile file: 'benchmark.sh', text: """#! /bin/bash
 echo Benchmark test
 printenv
-echo \${DUMMY_VAR}
-echo \${TEST_VAR}
 """
 
     dir ('ml-benchmark') {
@@ -36,11 +41,6 @@ echo \${TEST_VAR}
       configPath = BENCHMARK_SUITE_DEFAULT_PATH
     }
     def benchmarkConfig = readConfig(configPath)
-
-    dir (H2O_3_BENCHMARK_HOME) {
-      deleteDir()
-      sh "git clone ${env.WORKSPACE}/h2o-3 ."
-    }
 
     benchmarkConfig.each{ id, spec ->
       def revisionResultsRoot = resultsRoot + "/${spec['commit']}_${id}"
