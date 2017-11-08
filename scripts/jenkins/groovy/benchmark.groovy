@@ -1,6 +1,7 @@
-def call(args) {
+def call(buildConfig, stageConfig) {
   echo "BENCHMARKING SCRIPT"
-  echo "${args}"
+  echo "${buildConfig}"
+  echo "${stageConfig}"
 }
 
 // def BENCHMARK_SUITE_DEFAULT_PATH = 'benchmarking_suite.csv'
