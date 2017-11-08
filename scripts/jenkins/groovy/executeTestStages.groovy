@@ -13,10 +13,10 @@ def call(buildConfig) {
 
   // Job will execute PR_STAGES only if these are green.
   def SMOKE_STAGES = [
-    [
-      stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
-      timeoutValue: 8, lang: buildConfig.LANG_PY
-    ],
+    // [
+    //   stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',
+    //   timeoutValue: 8, lang: buildConfig.LANG_PY
+    // ],
     // [
     //   stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',
     //   timeoutValue: 8, lang: buildConfig.LANG_R

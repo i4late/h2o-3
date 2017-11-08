@@ -24,6 +24,10 @@ ansiColor('xterm') {
           }
         }
 
+        def script = load('h2o-3/scripts/jenkins/groovy/benchmark.groovy')
+        script(null)
+        error "NYI"
+
         def prepareH2O3 = load('h2o-3/scripts/jenkins/groovy/prepareH2O3.groovy')
         buildConfig = prepareH2O3('MODE_PR_TESTING', DEFAULT_NODE_LABEL, false)
 
