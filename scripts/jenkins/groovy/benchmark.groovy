@@ -1,19 +1,68 @@
 def call(buildConfig, stageConfig) {
+
+  def BENCHMARK_SUITE_DEFAULT_PATH = 'benchmarking_suite.csv'
+
   stage (stageConfig.stageName) {
-    stage('Preparation') {
-      echo "Checkout ml-benchmark"
+    writeFile file: BENCHMARK_SUITE_DEFAULT_PATH, text: """id,commit,num_of_runs,benchmark_file,env_file,bucket
+1,master,1,benchmark.sh,env-file,test.0xdata.com/h2o-3-benchmarks
+2,rel-weierstrass,3,benchmark.sh,env-file,test.0xdata.com/h2o-3-benchmarks
+"""
+    writeFile file: 'env-file', text: """DUMMY_VAR='BENCH VAR'
+TEST_VAR='TEST VAR'
+"""
+    writeFile file: 'benchmark.sh', text: """#! /bin/bash
+echo Benchmark test
+printenv
+echo \${DUMMY_VAR}
+echo \${TEST_VAR}
+"""
+
+    dir ('ml-benchmark') {
+      checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea', url: 'https://github.com/h2oai/ml-benchmark']]]
     }
-    stage ('Prepare H2O-3') {
-      echo "Checkout H2O-3"
+    sh "ls -alh"
+    def resultsRoot = stageConfig.benchmarkResultsRoot
+    if (resultsRoot == null) {
+      resultsRoot = env.WORKSPACE + '/benchmark_results'
     }
-    stage ('Benchmark') {
-      echo "Benchmark"
+
+    def configPath = stageConfig.benchmarkConfigPath
+    if (configPath == null) {
+      configPath = BENCHMARK_SUITE_DEFAULT_PATH
     }
+    def benchmarkConfig = readConfig(configPath)
+    echo "${benchmarkConfig}"
   }
 }
 
-// def BENCHMARK_SUITE_DEFAULT_PATH = 'benchmarking_suite.csv'
-//
+def readConfig(final String configPath) {
+    if (fileExists(configPath)) {
+        def config = [:]
+        readFile(configPath).split('\n').each{ line, count ->
+            def values = line.split(",\\s*")
+            if (values[0].toLowerCase() != 'id') {
+                config[values[0]] = [
+                    commit: values[1],
+                    numOfRuns: values[2],
+                    benchmarkFile: values[3],
+                    envFile: values[4],
+                    bucket: values[5]
+                ]
+            }
+        }
+        return config
+    }
+    error 'CSV file not found'
+}
+
+boolean ensureFileExists(final String path) {
+    if (!fileExists(path)) {
+        echo "[ERROR] Cannot find benchmark script ${path}"
+        return false
+    }
+    return true
+}
+
 // def wip() {
 //     stage ('Preparation') {
 //
@@ -31,23 +80,9 @@ def call(buildConfig, stageConfig) {
 // echo \${DUMMY_VAR}
 // echo \${TEST_VAR}
 // """
-//         dir ('ml-benchmark') {
-//             checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea', url: 'https://github.com/h2oai/ml-benchmark']]]
-//         }
 //     }
 //
 //     stage ('Benchmark') {
-//
-//         def resultsRoot = env.BENCHMARK_RESULTS_ROOT
-//         if (resultsRoot == null) {
-//             resultsRoot = env.WORKSPACE + '/benchmark_results'
-//         }
-//
-//         def configPath = env.BENCHMARK_SUITE_FILE
-//         if (configPath == null) {
-//             configPath = BENCHMARK_SUITE_DEFAULT_PATH
-//         }
-//         def config = readConfig(configPath)
 //
 //         config.each{ id, spec ->
 //             def revisionResultsRoot = resultsRoot + "/${spec['commit']}_${id}"
@@ -104,34 +139,6 @@ def call(buildConfig, stageConfig) {
 //             }
 //         }
 //     }
-// }
-//
-// def readConfig(final String configPath) {
-//     if (fileExists(configPath)) {
-//         def config = [:]
-//         readFile(configPath).split('\n').each{ line, count ->
-//             def values = line.split(",\\s*")
-//             if (values[0].toLowerCase() != 'id') {
-//                 config[values[0]] = [
-//                     commit: values[1],
-//                     numOfRuns: values[2],
-//                     benchmarkFile: values[3],
-//                     envFile: values[4],
-//                     bucket: values[5]
-//                 ]
-//             }
-//         }
-//         return config
-//     }
-//     error 'CSV file not found'
-// }
-//
-// boolean ensureFileExists(final String path) {
-//     if (!fileExists(path)) {
-//         echo "[ERROR] Cannot find benchmark script ${path}"
-//         return false
-//     }
-//     return true
 // }
 
 return this
