@@ -2,6 +2,7 @@ def call(buildConfig, stageConfig) {
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
   def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
   def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
+  def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
 
   def buildEnv = customEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
 
@@ -95,13 +96,6 @@ def unpackTestPackage(lang, String stageDir) {
     target: stageDir + '/'
   ]);
   sh "cd ${stageDir}/h2o-3 && unzip -o test-package-${lang}.zip && rm test-package-${lang}.zip"
-}
-
-def stageNameToDirName(String stageName) {
-  if (stageName != null) {
-    return stageName.toLowerCase().replace(' ', '-')
-  }
-  return null
 }
 
 def runAllStages(buildConfig) {

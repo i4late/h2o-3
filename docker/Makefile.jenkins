@@ -280,3 +280,7 @@ test-junit-smoke:
 benchmark-gbm:
 	echo "BENCHMARK GBM"
 	printenv
+	pwd
+	ls -alh
+	cd ml-benchmark
+	ls -alh

@@ -10,18 +10,20 @@ def call(buildConfig, stageConfig) {
   def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
   def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
   def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
+  def stageNameToDirName = load('h2o-3/scripts/jenkins/groovy/stageNameToDirName.groovy')
 
   stage (stageConfig.stageName) {
 
-    dir ('ml-benchmark') {
+    dir ("${stageNameToDirName}/h2o-3/ml-benchmark") {
       checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea', url: 'https://github.com/h2oai/ml-benchmark']]]
     }
 
     if (stageConfig.benchmarkResultsRoot == null) {
       stageConfig.benchmarkResultsRoot = "${env.WORKSPACE}/benchmark_results/${stageConfig.stageName}"
     }
-
-    defaultStage(buildConfig, stageConfig)
+    withEnv(["OUTPUT_PREFIX=${stageConfig.benchmarkResultsRoot}"]) {
+      defaultStage(buildConfig, stageConfig)
+    }
   }
 }
 
