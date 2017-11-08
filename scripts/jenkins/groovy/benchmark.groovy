@@ -9,52 +9,19 @@ def call(buildConfig, stageConfig) {
   def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
   def buildTarget = load('h2o-3/scripts/jenkins/groovy/buildTarget.groovy')
   def customEnv = load('h2o-3/scripts/jenkins/groovy/customEnv.groovy')
+  def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
 
   stage (stageConfig.stageName) {
-
-    writeFile file: 'benchmark.sh', text: """#! /bin/bash
-echo Benchmark test
-printenv
-"""
 
     dir ('ml-benchmark') {
       checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea', url: 'https://github.com/h2oai/ml-benchmark']]]
     }
 
-    def resultsRoot = stageConfig.benchmarkResultsRoot
-    if (resultsRoot == null) {
-      resultsRoot = env.WORKSPACE + '/benchmark_results'
+    if (stageConfig.benchmarkResultsRoot == null) {
+      stageConfig.benchmarkResultsRoot = "${env.WORKSPACE}/benchmark_results/${stageConfig.stageName}"
     }
 
-    def revisionResultsRoot = resultsRoot + "/${stageConfig.commit}_${new Date().getTime()}"
-    echo "###### Starting benchmarks for ${stageConfig.commit} ######"
-    echo """Details:
-    Revision:           ${stageConfig.commit}
-    Benchmark script:   ${stageConfig.benchmarkFile}
-    Results folder:     ${revisionResultsRoot}
-    Bucket for results: ${stageConfig.bucket}
-    """
-
-    echo "###### Starting benchmark #${runNum} for ${stageConfig.commit} ######"
-    def timestamp = new Date().getTime()
-    if (!ensureFileExists(spec['benchmarkFile']) || !ensureFileExists(spec['envFile'])) {
-        continue
-    }
-
-    def benchScriptAbsolutePath = env.WORKSPACE + '/' + spec['benchmarkFile']
-
-    // insideDockerEnv(....) {
-    //   dir(revisionResultsRoot) {
-    //     dir ("run${runNum}_${timestamp}") {
-    //       def envList = []
-    //       envList.addAll(readFile(envFileAbsolutePath).split('\n'))
-    //       withEnv(envList) {
-    //         sh "chmod +x ${benchScriptAbsolutePath}"
-    //         sh "${benchScriptAbsolutePath}"
-    //       }
-    //     }
-    //   }
-    // }
+    defaultStage(buildConfig, stageConfig)
   }
 }
 

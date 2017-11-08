@@ -13,6 +13,8 @@ def call(final String mode, final String nodeLabel, final boolean overrideDetect
 
   // get commit message
   def commitMessage = sh(script: 'cd h2o-3 && git log -1 --pretty=%B', returnStdout: true).trim()
+  env.GIT_SHA = "${sh(script: 'cd h2o-3 && git rev-parse HEAD', returnStdout: true).trim()}"
+  env.GIT_DATE = "${sh(script: 'cd h2o-3 && git show -s --format=%ci', returnStdout: true).trim()}"
 
   // get changes between merge base and this commit
   sh 'cd h2o-3 && git fetch --no-tags --progress https://github.com/h2oai/h2o-3 +refs/heads/master:refs/remotes/origin/master'

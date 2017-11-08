@@ -30,8 +30,9 @@ def call(buildConfig) {
     //   timeoutValue: 20, lang: buildConfig.LANG_JAVA
     // ],
     [
-      stageName: 'GBM Benchmark', timeoutValue: 120,
-      executionScript: 'h2o-3/scripts/jenkins/groovy/benchmark.groovy', algo: 'GBM'
+      stageName: 'GBM Benchmark', timeoutValue: 120, 
+      executionScript: 'h2o-3/scripts/jenkins/groovy/benchmark.groovy', target: 'benchmark-gbm',
+      lang: buildConfig.LANG_NONE, additionalTestPackages: [buildConfig.LANG_PY]
     ]
   ]
 
@@ -152,7 +153,7 @@ def call(buildConfig) {
   //     timeoutValue: 45, lang: buildConfig.LANG_JS
   //   ]
   ]
-  
+
   // Stages executed in addition to MASTER_STAGES, used for nightly builds.
   def NIGHTLY_STAGES = [
   //   [
@@ -261,8 +262,8 @@ def invokeStage(buildConfig, body) {
       selector: [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID]
     ]);
 
-    def s = load(config.executionScript)
-    s(buildConfig, config)
+    def script = load(config.executionScript)
+    script(buildConfig, config)
   }
 }
 
