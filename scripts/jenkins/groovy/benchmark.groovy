@@ -50,7 +50,8 @@ echo \${TEST_VAR}
       """
 
       dir (H2O_3_BENCHMARK_HOME) {
-        sh "pwd"
+        deleteDir()
+        sh 'git clone ../h2o-3 .'
       }
       // def buildEnv = customEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}"]
       // insideDocker(buildEnv, buildConfig, stageConfig.timeoutValue, 'MINUTES') {
