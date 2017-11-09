@@ -260,7 +260,7 @@ def invokeStage(buildConfig, body) {
       projectName: env.JOB_NAME,
       filter: "h2o-3/scripts/jenkins/groovy/*",
       selector: [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID]
-    ]);
+    ])
 
     def script = load(config.executionScript)
     script(buildConfig, config)

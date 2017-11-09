@@ -91,7 +91,7 @@ def unpackTestPackage(lang, String stageDir) {
     filter: "h2o-3/test-package-${lang}.zip, h2o-3/build/h2o.jar",
     selector: [$class: 'SpecificBuildSelector', buildNumber: env.BUILD_ID],
     target: stageDir + '/'
-  ]);
+  ])
   sh "cd ${stageDir}/h2o-3 && unzip -o test-package-${lang}.zip && rm test-package-${lang}.zip"
 }
 
@@ -100,7 +100,7 @@ def runAllStages(buildConfig) {
     // if not, then run all stages
     def result = !buildConfig.commitMessageContains('!rerun')
     // if we shouldn't run all stages based on the commit message, check
-    // that this is not overriden by environment
+    // that this is not overridden by environment
     if (!result) {
       result = env.overrideRerun == null || env.overrideRerun.toLowerCase() == 'true'
     }
