@@ -206,10 +206,8 @@ public class AstGroup extends AstPrimitive {
           Val val = Rapids.exec(tree);
           my0Frame.remove(0);
           my0Frame.add(val.getFrame());
-        //  my0Frame._key = frame0Key;
-    //      my1Frame = my0Frame;  // make sure both frame contain the merged data here
-        //  DKV.remove(my0Frame._key);
-        //  DKV.remove(my1Frame._key);
+          DKV.remove(my0Frame._key);
+          DKV.remove(my1Frame._key);
       }
 
       // Median is the middle element of a sorted column or the mean of the two middle elements for even row number.
