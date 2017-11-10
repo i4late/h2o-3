@@ -6,7 +6,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test <- function(conn) {
   Log.info("Generateing random dataset ...")
-  numrows = 100
+  numrows = 10000
   dfEnum.hex <- h2o.createFrame(rows=numrows, col=2, categorical_fraction=1, integer_fraction=0, binary_fraction=0,
   time_fraction=0, string_fraction=0, missing_fraction=0.0, has_response=FALSE, factor=5)
   dfReal.hex <- h2o.createFrame(rows=numrows, col=3, categorical_fraction=0, integer_fraction=0, binary_fraction=0,
