@@ -914,7 +914,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return dlJob;
   }
 
-  Job<StackedEnsembleModel>stack(Key<Model>[]... modelKeyArrays) {
+  Job<StackedEnsembleModel>stack(boolean withoutGLM, Key<Model>[]... modelKeyArrays) {
     List<Key<Model>> allModelKeys = new ArrayList<>();
     for (Key<Model>[] modelKeyArray : modelKeyArrays)
       allModelKeys.addAll(Arrays.asList(modelKeyArray));
@@ -923,7 +923,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     stackedEnsembleParameters._base_models = allModelKeys.toArray(new Key[0]);
     stackedEnsembleParameters._valid = (getValidationFrame() == null ? null : getValidationFrame()._key);
     //stackedEnsembleParameters._selection_strategy = StackedEnsembleModel.StackedEnsembleParameters.SelectionStrategy.choose_all;
-    Job ensembleJob = trainModel(null, "stackedensemble", stackedEnsembleParameters);
+
+    Key modelName = modelKey("StackedEnsemble");
+    if(withoutGLM){
+      modelName = modelKey("StackedEnsembleWithoutGLMs");
+    }
+    Job ensembleJob = trainModel(modelName, "stackedensemble", stackedEnsembleParameters);
     return ensembleJob;
   }
 
@@ -1085,8 +1090,29 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           if (!(aModel instanceof StackedEnsembleModel))
             notEnsembles[notEnsembleIndex++] = aModel._key;
 
-        Job<StackedEnsembleModel> ensembleJob = stack(notEnsembles);
+        Job<StackedEnsembleModel> ensembleJob = stack(false, notEnsembles);
         pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build", 50, this.job(), ensembleJob, JobType.ModelBuild);
+
+        ///////////////////////////////////////////////////////////
+        // stack all models except GLMs
+        ///////////////////////////////////////////////////////////
+
+        // Also stack models from other AutoML runs, by using the Leaderboard! (but don't stack stacks)
+        int nonEnsembleAndGLMCount = 0;
+        for (Model aModel : allModels)
+          if (!(aModel instanceof StackedEnsembleModel))
+            if(!(aModel instanceof GLMModel))
+              nonEnsembleAndGLMCount++;
+
+        Key<Model>[] notEnsemblesAndGLM = new Key[nonEnsembleAndGLMCount];
+        int notEnsembleAndGLMIndex = 0;
+        for (Model aModel : allModels)
+          if (!(aModel instanceof StackedEnsembleModel))
+            if(!(aModel instanceof GLMModel))
+              notEnsemblesAndGLM[notEnsembleAndGLMIndex++] = aModel._key;
+
+        Job<StackedEnsembleModel> ensembleWithoutGLMsJob = stack(true, notEnsemblesAndGLM);
+        pollAndUpdateProgress(Stage.ModelTraining, "StackedEnsemble build without GLMs", 50, this.job(), ensembleWithoutGLMsJob, JobType.ModelBuild);
 
       }
     }
